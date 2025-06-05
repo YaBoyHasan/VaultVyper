@@ -1,0 +1,27 @@
+VaultVyper/
+├── config.yml                      # API keys, ETH threshold, chain info
+├── main.py                         # main loop: run full pipeline
+├── requirements.txt 
+│
+├── /data/
+│   └── contracts.db                # SQLite: track scanned/exploited contracts
+│
+├── /core/
+│   ├── block_watcher.py            # fetch latest blocks, internal txs
+│   ├── contract_filter.py          # filter ETH-receiving contracts
+│   ├── source_fetcher.py           # Etherscan: fetch verified source
+│   ├── static_analyzer.py          # run Slither, parse output
+│   ├── fork_tester.py              # simulate exploit on Hardhat fork
+│   ├── flashbots_sender.py         # bundle + send exploit via Flashbots
+│   └── notifier.py                 # Telegram/Discord alerts
+│
+├── /utils/
+│   ├── web3_provider.py            # setup web3 connections
+│   ├── etherscan_api.py            # wrapper for Etherscan calls
+│   └── tx_utils.py                 # encode TXs, gas settings, helpers
+│
+├── /exploit_templates/
+│   └── reentrancy.sol.j2           # Jinja2 exploit contract template
+│
+└── /logs/
+    └── exploit_log.jsonl           # log of all attempted exploits
