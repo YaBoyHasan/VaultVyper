@@ -1,7 +1,7 @@
 from web3 import Web3
 import time
 
-WSS_URL = "wss://ethereum-rpc.publicnode.com"  # your WebSocket RPC URL
+WSS_URL = ""  # your WebSocket RPC URL
 w3 = Web3(Web3.LegacyWebSocketProvider(WSS_URL))
 
 # keep this at module‐scope so it persists across blocks
