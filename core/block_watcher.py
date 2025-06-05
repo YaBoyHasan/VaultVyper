@@ -1,38 +1,50 @@
 from web3 import Web3
-from utils.web3_provider import get_web3
+import time
 
-w3 = get_web3()
+WSS_URL = "wss://ethereum-rpc.publicnode.com"  # your WebSocket RPC URL
+w3 = Web3(Web3.LegacyWebSocketProvider(WSS_URL))
 
-def get_new_contracts(from_block=None, to_block=None):
-    latest = w3.eth.block_number
-    from_block = from_block or (latest - 1)
-    to_block = to_block or latest
+# keep this at module‐scope so it persists across blocks
+seen_contracts = set()
 
-    print(f"[ℹ️] Blocks {from_block} → {to_block}")
-    candidates = set()
+def handle_new_block(block_hash):
+    block = w3.eth.get_block(block_hash, full_transactions=False)
+    # track addresses seen just in this block to avoid duplicates within the same block
+    block_seen = set()
 
-    for block_number in range(from_block, to_block + 1):
+    for tx_hash in block.transactions:
         try:
-            block = w3.eth.get_block(block_number, full_transactions=True)
+            receipt = w3.eth.get_transaction_receipt(tx_hash)
+            if receipt.contractAddress:
+                addr = receipt.contractAddress
+            else:
+                addr = receipt.to
+
+            if not addr:
+                continue
+
+            # skip if we've already printed this contract ever, or already saw it in this block
+            if addr in seen_contracts or addr in block_seen:
+                continue
+
+            code = w3.eth.get_code(addr)
+            if code == b"":
+                continue
+
+            balance = w3.eth.get_balance(addr)
+            if balance > int(0.1 * 1e18):
+                print(f"[+] {addr} | {balance/1e18:.2f} ETH")
+                seen_contracts.add(addr)
+                block_seen.add(addr)
+
         except Exception as e:
-            print(f"[!] Block {block_number} error: {e}")
-            continue
+            print(f"[!] TX {tx_hash.hex()} error: {e}")
 
-        for tx in block.transactions:
-            try:
-                if tx.to is None:
-                    receipt = w3.eth.get_transaction_receipt(tx.hash)
-                    addr = receipt.contractAddress
-                else:
-                    addr = Web3.to_checksum_address(tx.to)
+# subscribe to new blocks
+block_filter = w3.eth.filter("latest")
+print("[ℹ️] Listening for new blocks…")
 
-                if addr and addr not in candidates:
-                    code = w3.eth.get_code(addr)
-                    balance = w3.eth.get_balance(addr)
-                    if code != b"" and balance > 0.1 * 1e18:
-                        print(f"[+] {addr} | {balance / 1e18:.2f} ETH")
-                        candidates.add(addr)
-            except Exception as e:
-                print(f"[!] TX {tx.hash.hex()} error: {e}")
-
-    return list(candidates)
+while True:
+    for new_hash in block_filter.get_new_entries():
+        handle_new_block(new_hash)
+    time.sleep(0.5)

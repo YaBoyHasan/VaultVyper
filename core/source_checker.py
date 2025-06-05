@@ -5,7 +5,7 @@ import time
 ETHERSCAN_API_KEY = os.getenv("ETHERSCAN_API_KEY", "4Q3GTX7MJTE4KT8E444M8I6FA6J9GN1NPZ")
 ETHERSCAN_URL = "https://api.etherscan.io/v2/api"
 
-def check_source_code_verified(addresses, chain_id=8453):
+def check_source_code_verified(addresses, chain_id=1):
     verified = []
 
     for addr in addresses:
